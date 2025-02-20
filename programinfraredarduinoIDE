@@ -1,0 +1,60 @@
+#include "CTBot.h"
+CTBot myBot;
+
+String ssid  = "Fathan";      
+String pass  = "fathan123";   
+String token = "7912453065:AAGIaPnTcLNchrggKL-3JOIsd6B7Dg24TSc";
+const long telegramID = 7722602669; 
+
+#define ir_Sensor 12  
+#define buzzer    16  // Gunakan satu buzzer
+
+bool isDetected = false;
+unsigned long lastMessageTime = 0;
+const unsigned long messageInterval = 2000; // Kirim pesan setiap 2 detik
+unsigned long buzzerStartTime = 0;  
+const unsigned long buzzerDuration = 2000; // Buzzer mati setelah 2 detik
+
+void setup() {
+  Serial.begin(9600);
+  pinMode(ir_Sensor, INPUT);
+  pinMode(buzzer, OUTPUT);
+  digitalWrite(buzzer, LOW); // Pastikan buzzer mati saat awal
+
+  Serial.println("Menghubungkan ke Wi-Fi...");
+  myBot.wifiConnect(ssid, pass);
+  myBot.setTelegramToken(token);
+
+  if (myBot.testConnection()) {
+    Serial.println("Bot Telegram terhubung!");
+  } else {
+    Serial.println("Gagal terhubung ke Bot Telegram!");
+  }
+}
+
+void loop() {
+  int sensorStatus = digitalRead(ir_Sensor);
+
+  if (sensorStatus == 0) {
+    // Jika ada gerakan, nyalakan buzzer
+    digitalWrite(buzzer, HIGH);
+    Serial.println("🚨 Ada yang masuk!");
+
+    // Kirim pesan setiap 2 detik jika masih mendeteksi
+    if (!isDetected || millis() - lastMessageTime > messageInterval) {
+      myBot.sendMessage(telegramID, "🚨 Ada yang masuk terdeteksi oleh sensor!");
+      lastMessageTime = millis();
+      isDetected = true;
+    }
+
+    // Set waktu terakhir buzzer aktif
+    buzzerStartTime = millis();
+  }
+
+  // Tunggu 2 detik sebelum buzzer mati
+  if (millis() - buzzerStartTime > buzzerDuration) {
+    digitalWrite(buzzer, LOW);
+    isDetected = false;
+    Serial.println("Buzzer mati setelah 2 detik.");
+  }
+}
