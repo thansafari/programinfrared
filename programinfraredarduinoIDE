@@ -1,25 +1,25 @@
 #include "CTBot.h"
 CTBot myBot;
 
-String ssid  = "Fathan";      
-String pass  = "fathan123";   
-String token = "7912453065:AAGIaPnTcLNchrggKL-3JOIsd6B7Dg24TSc";
-const long telegramID = 7722602669; 
+String ssid  = "Fathan";      // Ganti nama ssid dengan nama Hostpot
+String pass  = "fathan123";   // Ganti pass dengan password hostpot
+String token = "7912453065:AAGIaPnTcLNchrggKL-3JOIsd6B7Dg24TSc"; // dapatkan telegram id menggunakan @BotFather yang ada di telegram dan ketik /newbot
+const long telegramID = 7722602669; // dapatkan telegram id menggunakan @myidbot di telegram dan ketik /getid
 
-#define ir_Sensor 12  
-#define buzzer    16  // Gunakan satu buzzer
+#define pir_Sensor 12  // Sensor PIR di GPIO12 (D6 pada NodeMCU)
+#define buzzer1    16  // Buzzer di GPIO16 (D0 pada NodeMCU)
 
 bool isDetected = false;
 unsigned long lastMessageTime = 0;
-const unsigned long messageInterval = 2000; // Kirim pesan setiap 2 detik
+const unsigned long messageInterval = 2000;  
 unsigned long buzzerStartTime = 0;  
-const unsigned long buzzerDuration = 2000; // Buzzer mati setelah 2 detik
+const unsigned long buzzerDuration = 2000;  
 
 void setup() {
-  Serial.begin(9600);
-  pinMode(ir_Sensor, INPUT);
-  pinMode(buzzer, OUTPUT);
-  digitalWrite(buzzer, LOW); // Pastikan buzzer mati saat awal
+  Serial.begin(115200);
+  pinMode(pir_Sensor, INPUT);
+  pinMode(buzzer1, OUTPUT);
+  digitalWrite(buzzer1, LOW);
 
   Serial.println("Menghubungkan ke Wi-Fi...");
   myBot.wifiConnect(ssid, pass);
@@ -33,28 +33,25 @@ void setup() {
 }
 
 void loop() {
-  int sensorStatus = digitalRead(ir_Sensor);
+  int sensorStatus = digitalRead(pir_Sensor);
 
-  if (sensorStatus == 0) {
-    // Jika ada gerakan, nyalakan buzzer
-    digitalWrite(buzzer, HIGH);
+  if (sensorStatus == HIGH) {  
+    digitalWrite(buzzer1, HIGH);  
     Serial.println("🚨 Ada yang masuk!");
 
-    // Kirim pesan setiap 2 detik jika masih mendeteksi
     if (!isDetected || millis() - lastMessageTime > messageInterval) {
-      myBot.sendMessage(telegramID, "🚨 Ada yang masuk terdeteksi oleh sensor!");
+      myBot.sendMessage(7722602669, "🚨 Ada yang masuk terdeteksi oleh sensor!");
       lastMessageTime = millis();
       isDetected = true;
     }
 
-    // Set waktu terakhir buzzer aktif
     buzzerStartTime = millis();
   }
 
-  // Tunggu 2 detik sebelum buzzer mati
-  if (millis() - buzzerStartTime > buzzerDuration) {
-    digitalWrite(buzzer, LOW);
+  if (buzzerStartTime != 0 && millis() - buzzerStartTime > buzzerDuration) {
+    digitalWrite(buzzer1, LOW);
     isDetected = false;
+    buzzerStartTime = 0;
     Serial.println("Buzzer mati setelah 2 detik.");
   }
 }
